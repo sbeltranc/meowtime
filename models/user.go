@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/gocql/gocql"
 )
 
@@ -19,9 +21,9 @@ type User struct {
 
 func GetUserByID(session *gocql.Session, id string) (*User, error) {
 	var user User
-	query := `SELECT id, email, name, picture, team_id, team_name FROM users WHERE id = ? LIMIT 1`
+	query := `SELECT id, sub, email, name, picture, team_id, team_name FROM users WHERE id = ? LIMIT 1`
 	if err := session.Query(query, id).Consistency(gocql.One).Scan(
-		&user.ID, &user.Email, &user.Name, &user.Picture, &user.TeamID, &user.TeamName,
+		&user.ID, &user.SUB, &user.Email, &user.Name, &user.Picture, &user.TeamID, &user.TeamName,
 	); err != nil {
 		return nil, err
 	}
@@ -30,9 +32,9 @@ func GetUserByID(session *gocql.Session, id string) (*User, error) {
 
 func GetUserBySUB(session *gocql.Session, sub string) (*User, error) {
 	var user User
-	query := `SELECT id, email, name, picture, team_id, team_name FROM users WHERE sub = ? LIMIT 1`
+	query := `SELECT sub, id, email, name, picture, team_id, team_name FROM users WHERE sub = ? LIMIT 1`
 	if err := session.Query(query, sub).Consistency(gocql.One).Scan(
-		&user.ID, &user.Email, &user.Name, &user.Picture, &user.TeamID, &user.TeamName,
+		&user.SUB, &user.ID, &user.Email, &user.Name, &user.Picture, &user.TeamID, &user.TeamName,
 	); err != nil {
 		return nil, err
 	}
@@ -44,19 +46,44 @@ func CreateUser(session *gocql.Session, user *User) error {
 	return session.Query(query, user.ID, user.SUB, user.Email, user.Name, user.Picture, user.TeamID, user.TeamName).Exec()
 }
 
-func InitSchema(session *gocql.Session) error {
-	query := `
-	CREATE TABLE IF NOT EXISTS users (
-		id TEXT PRIMARY KEY,
-		sub TEXT,
-		email TEXT,
-		name TEXT,
-		picture TEXT,
-		team_id TEXT,
-		team_name TEXT
-	);
-	`
-	return session.Query(query).Exec()
+func InitUserSchema(db *gocql.Session) error {
+	// creating the table IF it doesn't exist
+	err := db.Query(`
+		CREATE TABLE IF NOT EXISTS users (
+			id uuid,
+			sub text,
+			email text,
+			name text,
+			picture text,
+			team_id text,
+			team_name text,
+			PRIMARY KEY (id, sub)
+		)
+	`).Exec()
+
+	if err != nil {
+		return fmt.Errorf("error creating users table: %w", err)
+	}
+
+	// now checking if something is missing so we can add it up
+	columns := []struct {
+		name     string
+		datatype string
+	}{
+		{"sub", "text"},
+		{"email", "text"},
+		{"name", "text"},
+		{"picture", "text"},
+		{"team_id", "text"},
+		{"team_name", "text"},
+	}
+
+	for _, col := range columns {
+		query := "ALTER TABLE users ADD " + col.name + " " + col.datatype
+		db.Query(query).Exec()
+	}
+
+	return nil
 }
 
 func UpdateUser(session *gocql.Session, user *User) error {

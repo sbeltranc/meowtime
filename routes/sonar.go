@@ -12,5 +12,5 @@ func SetupSonarRoutes(app *fiber.App, scylla *gocql.Session) {
 
 	sonar := app.Group("/sonar-service")
 
-	sonar.Get("/user/:id", sonarController.UserInfo)
+	sonar.Post("/call", sonarController.SonarCall)
 }

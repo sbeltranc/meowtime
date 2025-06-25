@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 
+	"main/models"
 	"main/routes"
 )
 
@@ -53,6 +54,10 @@ func main() {
 	app.Get("/up", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).SendString("beep boop, meowtime OK!")
 	})
+
+	// configuring schemas
+	models.InitUserSchema(scylla)
+	models.InitSonarSchema(scylla)
 
 	// setup auth routes
 	routes.SetupUserRoutes(app, scylla)

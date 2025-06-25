@@ -114,7 +114,6 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 
 	if err != nil {
 		// let's check if the error isnt because the user was not found
-		fmt.Printf("Error fetching user by SUB: %v\n", err)
 		if err != gocql.ErrNotFound {
 			return c.Status(fiber.StatusInternalServerError).JSON(
 				fiber.Map{"error": "An internal error occurred while searching for your account, try again later or contact santiago [at] hackclub [dot] app if this issue persists"},
@@ -138,10 +137,12 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusCreated).JSON(
 			fiber.Map{
-				"id":      newUser.ID,
-				"name":    newUser.Name,
-				"email":   newUser.Email,
-				"picture": newUser.Picture,
+				"id":        newUser.ID,
+				"name":      newUser.Name,
+				"email":     newUser.Email,
+				"picture":   newUser.Picture,
+				"team_id":   newUser.TeamID,
+				"team_name": newUser.TeamName,
 			},
 		)
 	}

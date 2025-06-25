@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"main/models"
-
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
 )
@@ -15,21 +13,26 @@ func NewSonarController(scylla *gocql.Session) *SonarController {
 	return &SonarController{scylla: scylla}
 }
 
-func (ac *SonarController) UserInfo(c *fiber.Ctx) error {
-	id := c.Params("id")
-	if id == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Missing user id"})
+func (ac *SonarController) SonarCall(c *fiber.Ctx) error {
+	var req struct {
+		ProjectName      string                 `json:"project_name"`
+		TotalTimeSeconds int                    `json:"total_time_seconds"`
+		Metadata         map[string]interface{} `json:"metadata"`
 	}
-	user, err := models.GetUserByID(ac.scylla, id)
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+
+	// parsing dumb dumb body
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{"error": "There was invalid data given to the Sonar call endpoint, please check the request data on what's wrong with it"},
+		)
 	}
+
+	// now, we want to get the user authenticatio
+
+	// Process the request data
+	// ...
+
 	return c.JSON(fiber.Map{
-		"id":        user.ID,
-		"email":     user.Email,
-		"name":      user.Name,
-		"picture":   user.Picture,
-		"team_id":   user.TeamID,
-		"team_name": user.TeamName,
+		"status": "success",
 	})
 }
