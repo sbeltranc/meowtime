@@ -29,9 +29,6 @@ func (ac *SonarController) SonarCall(c *fiber.Ctx) error {
 
 	// now, we want to get the user authenticatio
 
-	// Process the request data
-	// ...
-
 	return c.JSON(fiber.Map{
 		"status": "success",
 	})
