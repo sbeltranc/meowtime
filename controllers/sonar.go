@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"main/models"
+
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
 )
@@ -27,7 +29,14 @@ func (ac *SonarController) SonarCall(c *fiber.Ctx) error {
 		)
 	}
 
-	// now, we want to get the user authenticatio
+	user := c.Locals("user").(*models.User)
+	authenticated := c.Locals("authenticated").(bool)
+
+	if !authenticated {
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{"error": "You are required to authenticate your session for being able to call the Sonar Service"}
+		)
+	}
 
 	return c.JSON(fiber.Map{
 		"status": "success",

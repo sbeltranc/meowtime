@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/goccy/go-json"
@@ -60,6 +61,27 @@ func main() {
 	models.InitSonarSchema(scylla)
 
 	// authentication middleware
+	app.Use(func(c *fiber.Ctx) error {
+		authHeader := c.Get("Authorization")
+
+		c.Locals("user", nil)
+		c.Locals("authenticated", false)
+
+		if authHeader == "" {
+			return c.Next()
+		}
+
+		session, err := models.FindSession(authHeader, scylla)
+		if err != nil {
+			fmt.Printf("Something went wrong while trying to get session '%s': %v", authHeader, err)
+			return c.Next()
+		}
+
+		c.Locals("user", session) // no worries, the find session function returns the user
+		c.Locals("authenticated", true)
+
+		return c.Next()
+	})
 
 	// setup auth routes
 	routes.SetupUserRoutes(app, scylla)
