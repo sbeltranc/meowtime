@@ -15,9 +15,9 @@ func NewSonarController(scylla *gocql.Session) *SonarController {
 
 func (ac *SonarController) SonarCall(c *fiber.Ctx) error {
 	var req struct {
-		ProjectName      string                 `json:"project_name"`
-		TotalTimeSeconds int                    `json:"total_time_seconds"`
-		Metadata         map[string]interface{} `json:"metadata"`
+		ProjectName      string         `json:"project_name"`
+		TotalTimeSeconds int            `json:"total_time_seconds"`
+		Metadata         map[string]any `json:"metadata"`
 	}
 
 	// parsing dumb dumb body

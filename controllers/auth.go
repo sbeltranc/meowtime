@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"main/models"
 
@@ -22,6 +24,16 @@ type AuthController struct {
 
 func NewAuthController(scylla *gocql.Session) *AuthController {
 	return &AuthController{scylla: scylla}
+}
+
+func generateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+"
+	b := make([]byte, length)
+	rand.Read(b)
+	for i := range b {
+		b[i] = charset[b[i]%byte(len(charset))]
+	}
+	return string(b)
 }
 
 var (
@@ -135,6 +147,24 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 				fiber.Map{"error": "Your account was not created in our database for some internal error, try again later or contact santiago [at] hackclub [dot] app if this issue persists"},
 			)
 		}
+
+		// creating the session for the user
+		newSession := &models.Session{
+			ID:           gocql.TimeUUID().String(),
+			UserID:       newUser.ID,
+			SessionToken: generateRandomString(64),
+			ExpiresAt:    time.Now().Add(time.Hour * 24).Unix(),
+		}
+
+		session, err := models.CreateSession(newSession, ac.scylla)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				fiber.Map{"error": "Your session was not created in our database for some internal error, try again later or contact santiago [at] hackclub [dot] app if this issue persists"},
+			)
+		}
+
+		c.Set("Authorization", fmt.Sprintf("Bearer %s", session.SessionToken))
+
 		return c.Status(fiber.StatusCreated).JSON(
 			fiber.Map{
 				"id":        newUser.ID,
@@ -146,6 +176,23 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 			},
 		)
 	}
+
+	// creating the session and adding the token to the headers
+	newSession := &models.Session{
+		ID:           gocql.TimeUUID().String(),
+		UserID:       user.ID,
+		SessionToken: generateRandomString(64),
+		ExpiresAt:    time.Now().Add(time.Hour * 24).Unix(),
+	}
+
+	session, err := models.CreateSession(newSession, ac.scylla)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			fiber.Map{"error": "Your session was not created in our database for some internal error, try again later or contact santiago [at] hackclub [dot] app if this issue persists"},
+		)
+	}
+
+	c.Set("Authorization", fmt.Sprintf("Bearer %s", session.SessionToken))
 
 	// just for being safe, we are gonna update the user information in case it changed
 	user.Email = userData["email"].(string)

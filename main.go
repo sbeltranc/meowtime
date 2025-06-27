@@ -59,6 +59,8 @@ func main() {
 	models.InitUserSchema(scylla)
 	models.InitSonarSchema(scylla)
 
+	// authentication middleware
+
 	// setup auth routes
 	routes.SetupUserRoutes(app, scylla)
 	routes.SetupAuthRoutes(app, scylla)
