@@ -13,4 +13,5 @@ func SetupUserRoutes(app *fiber.App, scylla *gocql.Session) {
 	users := app.Group("/users-service")
 
 	users.Get("/user/:id", userController.UserInfo)
+	users.Get("/user/authenticated", userController.AuthenticatedUser)
 }

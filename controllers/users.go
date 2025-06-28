@@ -33,3 +33,21 @@ func (ac *UsersController) UserInfo(c *fiber.Ctx) error {
 		"team_name": user.TeamName,
 	})
 }
+
+func (ac *UsersController) AuthenticatedUser(c *fiber.Ctx) error {
+	if c.Locals("authenticated").(bool) == true {
+		user := c.Locals("user").(*models.User)
+		return c.JSON(fiber.Map{
+			"id":        user.ID,
+			"email":     user.Email,
+			"name":      user.Name,
+			"picture":   user.Picture,
+			"team_id":   user.TeamID,
+			"team_name": user.TeamName,
+		})
+	}
+
+	return c.Status(fiber.StatusUnauthorized).JSON(
+		fiber.Map{"error": "Unauthorized"},
+	)
+}
