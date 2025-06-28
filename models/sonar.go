@@ -15,7 +15,6 @@ type Sonar struct {
 	ProjectID string          `json:"project_id" cql:"project_id"`
 	TotalTime int64           `json:"total_time" cql:"total_time"`
 	Software  string          `json:"software" cql:"software"`
-	OS        string          `json:"os" cql:"os"`
 }
 
 func InitSonarSchema(db *gocql.Session) error {
@@ -29,7 +28,6 @@ func InitSonarSchema(db *gocql.Session) error {
 			project_id text,
 			total_time bigint,
 			software text,
-			os text,
 			PRIMARY KEY (user_id, project_id)
 		)
 	`).Exec()
@@ -49,7 +47,6 @@ func InitSonarSchema(db *gocql.Session) error {
 		{"project_id", "text"},
 		{"total_time", "bigint"},
 		{"software", "text"},
-		{"os", "text"},
 	}
 
 	for _, col := range columns {
@@ -60,7 +57,7 @@ func InitSonarSchema(db *gocql.Session) error {
 	return nil
 }
 
-func CreateSonar(sonar *Sonar, db *gocql.Session) {
+func CreateSonar(sonar *Sonar, db *gocql.Session) (*Sonar, error) {
 	sonar = &Sonar{
 		ID:        sonar.ID,
 		UserID:    sonar.UserID,
@@ -69,15 +66,17 @@ func CreateSonar(sonar *Sonar, db *gocql.Session) {
 		ProjectID: sonar.ProjectID,
 		TotalTime: sonar.TotalTime,
 		Software:  sonar.Software,
-		OS:        sonar.OS,
 	}
 
 	err := db.Query(`
-		INSERT INTO sonar (id, user_id, metadata, ip_address, project_id, total_time, software, os)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, sonar.ID, sonar.UserID, sonar.Metadata, sonar.IPAddress, sonar.ProjectID, sonar.TotalTime, sonar.Software, sonar.OS).Exec()
+		INSERT INTO sonar (id, user_id, metadata, ip_address, project_id, total_time, software)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, sonar.ID, sonar.UserID, sonar.Metadata, sonar.IPAddress, sonar.ProjectID, sonar.TotalTime, sonar.Software).Exec()
 
 	if err != nil {
 		fmt.Println("Error creating sonar:", err)
+		return nil, err
 	}
+
+	return sonar, nil
 }

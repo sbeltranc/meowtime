@@ -63,12 +63,17 @@ func main() {
 	// authentication middleware
 	app.Use(func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
+		connectingIP := c.Get("CF-Connecting-IP")
 
 		c.Locals("user", nil)
 		c.Locals("authenticated", false)
 
 		if authHeader == "" {
 			return c.Next()
+		}
+
+		if connectingIP == "" {
+			c.Locals("ip", c.IP())
 		}
 
 		session, err := models.FindSession(authHeader, scylla)
