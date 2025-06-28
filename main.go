@@ -91,6 +91,7 @@ func main() {
 	// setup auth routes
 	routes.SetupUserRoutes(app, scylla)
 	routes.SetupAuthRoutes(app, scylla)
+	routes.SetupProjectRoutes(app, scylla)
 
 	// listening application
 	app.Listen(":" + os.Getenv("SERVER_PORT"))
