@@ -104,4 +104,5 @@ func FindProjectByID(id string, scylla *gocql.Session) (*Project, error) {
 	}
 
 	return &project, nil
+
 }

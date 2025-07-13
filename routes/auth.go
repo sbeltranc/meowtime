@@ -11,7 +11,10 @@ func SetupAuthRoutes(app *fiber.App, scylla *gocql.Session) {
 	authController := controllers.NewAuthController(scylla)
 
 	auth := app.Group("/auth-service")
+	auth.Get("/authenticated", authController.Authenticated)
 
-	auth.Get("/slack/login", authController.SlackLogin)
-	auth.Get("/slack/callback", authController.SlackCallback)
+	slack := auth.Group("/slack")
+
+	slack.Get("/login", authController.SlackLogin)
+	slack.Get("/callback", authController.SlackCallback)
 }

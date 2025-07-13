@@ -11,6 +11,7 @@ import (
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 
 	"main/models"
@@ -43,6 +44,14 @@ func main() {
 		JSONDecoder: json.Unmarshal,
 	})
 
+	// adding CORS middleware
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:5173, http://localhost:3000, http://localhost:8080",
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With",
+		AllowCredentials: true,
+	}))
+
 	// adding the requests id
 	app.Use(requestid.New(requestid.Config{
 		Header: "Meowtime-Request-Id",
@@ -59,6 +68,8 @@ func main() {
 	// configuring schemas
 	models.InitUserSchema(scylla)
 	models.InitSonarSchema(scylla)
+	models.InitSessionSchema(scylla)
+	models.InitProjectSchema(scylla)
 
 	// authentication middleware
 	app.Use(func(c *fiber.Ctx) error {

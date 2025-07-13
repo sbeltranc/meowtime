@@ -12,7 +12,6 @@ import (
 
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/slack"
@@ -44,7 +43,6 @@ var (
 		Scopes:       []string{"email", "profile", "openid"},
 		Endpoint:     slack.Endpoint,
 	}
-	sessionStore = session.New()
 )
 
 func (ac *AuthController) SlackLogin(c *fiber.Ctx) error {
@@ -71,16 +69,6 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 		)
 	}
 
-	sess, err := sessionStore.Get(c)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(
-			fiber.Map{"error": "Failed to create a session for the user, try again later or contact santiago [at] hackclub [dot] app if this issue persists"},
-		)
-	}
-
-	sess.Set("slack_token", token.AccessToken)
-	sess.Save()
-
 	// fetching the user information from Slack with the token we obtained
 	client := oauthConf.Client(c.Context(), token)
 	resp, err := client.Get("https://slack.com/api/openid.connect.userInfo")
@@ -106,6 +94,9 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 			fiber.Map{"error": "Failed to decode the response from Slack, try again later or contact santiago [at] hackclub [dot] app if this issue persists"},
 		)
 	}
+
+	// print user data
+	fmt.Printf("User data from Slack: %+v\n", userData)
 
 	if userData["ok"] != true {
 		return c.Status(fiber.StatusInternalServerError).JSON(
@@ -165,7 +156,7 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 
 		c.Set("Authorization", fmt.Sprintf("Bearer %s", session.SessionToken))
 
-		return c.Status(fiber.StatusCreated).JSON(
+		return c.Status(fiber.StatusOK).JSON(
 			fiber.Map{
 				"id":        newUser.ID,
 				"name":      newUser.Name,
@@ -205,7 +196,7 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 
 	if err != nil {
 		// eh it's whatever, let's say it was not updated and continue ig
-		return c.Status(fiber.StatusNotModified).JSON(
+		return c.Status(fiber.StatusOK).JSON(
 			fiber.Map{
 				"id":        user.ID,
 				"name":      user.Name,
@@ -218,6 +209,27 @@ func (ac *AuthController) SlackCallback(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusFound).JSON(
+		fiber.Map{
+			"id":        user.ID,
+			"name":      user.Name,
+			"email":     user.Email,
+			"picture":   user.Picture,
+			"team_id":   user.TeamID,
+			"team_name": user.TeamName,
+		},
+	)
+}
+
+func (ac *AuthController) Authenticated(c *fiber.Ctx) error {
+	user := c.Context().UserValue("user").(*models.User)
+
+	if user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{"error": "You are not authenticated, please login to access this resource"},
+		)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(
 		fiber.Map{
 			"id":        user.ID,
 			"name":      user.Name,
